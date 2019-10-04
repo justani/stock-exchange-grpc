@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+service StockExchange {
+	rpc OrderCreate (OrderCreateRequest) returns (OrderStatusResponse) {}
+	rpc OrderStatus (OrderIdRequest) returns (OrderStatusResponse) {}
+	rpc OrderCancel (OrderIdRequest) returns (OrderStatusResponse) {}
+	rpc UserOrders (UserRequest) returns (MultiOrderStatusResponse) {}
+	rpc StockVolume1h (StockRequest) returns (VolumeResponse) {}
+	rpc StockPrice1h (StockRequest) returns (PriceResponse) {}
+	rpc OHLC(OHLCRequest) returns (OHLCResponse) {}
+}
+
+message OrderCreateRequest {
+	Order order = 1;
+}
+
+message OrderIdRequest {
+	uint64 order_id = 1;
+}
+
+message Order {
+	string user = 1;
+	uint64 created_at = 7;
+	bool buy = 5;
+	float quantity = 2;
+	float price = 3;
+	string stock = 4;
+}
+
+message OrderMatch {
+	float price = 2;
+	float quantity = 1;
+	uint64 created_at = 7;
+}
+
+message OrderStatusResponse {
+	uint64 order_id = 2;
+	bool active = 4;
+	repeated OrderMatch matches = 5;	
+}
+
+message MultiOrderStatusResponse {
+	repeated OrderStatusResponse orders = 1;
+}
+
+message UserRequest {
+	string user = 1;
+	uint64 start_time = 2;
+	uint64 end_time = 3;
+}
+
+message StockRequest {
+	string stock = 1;
+}
+
+message PriceResponse {
+	float price = 1;
+}
+
+message VolumeResponse {
+	float volume = 1;
+}
+
+message OHLCRequest {
+	string stock = 1;
+	uint64 start_time = 2;
+	uint64 end_time = 3;
+}
+
+message OHLCResponse {
+	float open = 1;
+	float high = 2;
+	float low = 3;
+	float close = 4;
+	float volume = 5;
+}
