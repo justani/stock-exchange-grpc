@@ -166,9 +166,6 @@ class StockExchangeServicer(stock_exchange_pb2_grpc.StockExchangeServicer):
         return self.orderStatus[request.order_id]
 
     def UserOrders(self, request, context):
-        if user not in self.userOrders:
-            return None
-        
         requested_orders = []
         for order_id in self.userOrders[user]:
             created_at = self.orders[order_id].created_at
