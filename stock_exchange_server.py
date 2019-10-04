@@ -162,7 +162,7 @@ class StockExchangeServicer(stock_exchange_pb2_grpc.StockExchangeServicer):
         return self.orderStatus[request.order_id]
 
     def OrderCancel(self, request, context):
-        self.orderStatus[request.order_id].active = False
+        self._DeactivateOrder(request.order_id)
         return self.orderStatus[request.order_id]
 
     def UserOrders(self, request, context):
