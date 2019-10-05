@@ -56,5 +56,9 @@ def main():
 	print(stub.OHLC(OHLCRequest(stock="APPL", start_time=now-1000, end_time=now+1000)))
 	print()
 
+	print(stub.UserOrders(UserRequest(user="Sam",start_time=now-10,end_time=now+10)))
+
+	print(stub.OrderCancel(OrderIdRequest(order_id=1)))
+
 if __name__ == "__main__":
 	main()

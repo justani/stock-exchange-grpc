@@ -167,8 +167,13 @@ class StockExchangeServicer(stock_exchange_pb2_grpc.StockExchangeServicer):
 
     def UserOrders(self, request, context):
         requested_orders = []
-        for order_id in self.userOrders[user]:
-            created_at = self.orders[order_id].created_at
+        for order_id in self.userOrders[request.user]:
+            created_at = 0
+            if order_id in self.activeOrders:
+                created_at = self.activeOrders[order_id].created_at
+            else:
+                created_at = self.inactiveOrders[order_id].created_at
+            
             if created_at < request.start_time:
                 continue
             if created_at > request.end_time:
