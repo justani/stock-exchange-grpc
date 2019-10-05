@@ -165,21 +165,49 @@ class StockExchangeServicer(stock_exchange_pb2_grpc.StockExchangeServicer):
         self._DeactivateOrder(request.order_id)
         return self.orderStatus[request.order_id]
 
+    def _GetCreatedAt(self, order_id):
+        created_at = 0
+        if order_id in self.activeOrders:
+            created_at = self.activeOrders[order_id].created_at
+        else:
+            created_at = self.inactiveOrders[order_id].created_at
+        return created_at
+
+
+    def _LeftBoundUserOrder(self, request):
+        left, right = 0, len(self.userOrders[request.user])
+        while left < right:
+            mid = (left + right) // 2
+            order_id = self.userOrders[request.user][mid]
+            created_at = self._GetCreatedAt(order_id)
+            if created_at < request.start_time:
+                left = mid+1
+            else:
+                right = mid 
+        return right
+
+    def _LeftBoundStockDetail(self, request):
+        left, right = 0, len(self.stockDetails[request.stock])
+        while left < right:
+            mid = (left + right) // 2
+            stock_detail = self.stockDetails[request.stock][mid]
+            if stock_detail["time"] < request.start_time:
+                left = mid+1
+            else:
+                right = mid
+        return right
+
+
     def UserOrders(self, request, context):
         requested_orders = []
-        for order_id in self.userOrders[request.user]:
-            created_at = 0
-            if order_id in self.activeOrders:
-                created_at = self.activeOrders[order_id].created_at
-            else:
-                created_at = self.inactiveOrders[order_id].created_at
-            
-            if created_at < request.start_time:
-                continue
+        left_bound = self._LeftBoundUserOrder(request)
+        for i in range(left_bound, len(self.userOrders[request.user])):
+            order_id = self.userOrders[request.user][i]
+            created_at = self._GetCreatedAt(order_id)
             if created_at > request.end_time:
                 break
             requested_orders.append(self.orderStatus[order_id])
-        
+
         return MultiOrderStatusResponse(orders=requested_orders)
 
     def StockVolume1h(self, request, context):
@@ -188,25 +216,26 @@ class StockExchangeServicer(stock_exchange_pb2_grpc.StockExchangeServicer):
     def StockPrice1h(self, request, context):
         return PriceResponse(price=self.stockPrice1h[request.stock])
 
-    def OHLC(self, request, response):
+    def OHLC(self, request, context):
         open = -1
         high = -1
         low = -1
         close = -1
         volume = 0
-        for detail in self.stockDetails[request.stock]:
-            if detail["time"] < request.start_time:
-                continue
-            if detail["time"] > request.end_time:
+        left_bound = self._LeftBoundStockDetail(request)
+        for i in range(left_bound, len(self.stockDetails[request.stock])):
+            stock_detail = self.stockDetails[request.stock][i]
+            if stock_detail["time"] > request.end_time:
                 break
             if open == -1:
-                open = detail["price"]
+                open = stock_detail["price"]
             if low == -1:
-                low = detail["price"]
-            high = max(high, detail["price"])
-            low = min(low, detail["price"])
-            close = detail["price"]
-            volume += detail["quantity"]
+                low = stock_detail["price"]
+            high = max(high, stock_detail["price"])
+            low = min(low, stock_detail["price"])
+            close = stock_detail["price"]
+            volume += stock_detail["quantity"]
+        
         return OHLCResponse(open=open, high=high, low=low, close=close, volume=volume)
             
 def serve():
